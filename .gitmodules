@@ -1,0 +1,6 @@
+[submodule "bpRNA"]
+	path = bpRNA
+	url = https://github.com/hendrixlab/bpRNA.git
+[submodule "deepMirCut"]
+	path = deepMirCut
+	url = https://github.com/JimBell/deepMirCut
