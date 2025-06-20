@@ -1,0 +1,87 @@
+Bootstrap: docker
+From: pytorch/pytorch:1.2-cuda10.0-cudnn7-devel
+
+%files
+    deepMirCut /opt/deepMirCut
+    bpRNA /opt/bpRNA
+    setup-deepMirCut.sh /opt/deepMirCut/
+    deepMirCut_predict.py /opt/deepMirCut/
+
+%environment
+    export DEBIAN_FRONTEND=noninteractive
+    export PATH="/opt/ViennaRNA-2.4.18/build/bin:/opt/perl5/bin:/opt/bpRNA:/opt/miniforge3/bin:$PATH"
+    export LD_LIBRARY_PATH="/opt/ViennaRNA-2.4.18/build/lib:$LD_LIBRARY_PATH"
+    export PKG_CONFIG_PATH="/opt/ViennaRNA-2.4.18/build/pkgconfig"
+    export PERL5LIB="/opt/perl5/lib/perl5"
+
+%post
+    # Set working directory
+    cd /opt/deepMirCut
+
+    apt-get update && \
+    apt-get install -y wget && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install ViennaRNA
+    cd /opt && \
+    wget https://www.tbi.univie.ac.at/RNA/download/sourcecode/2_4_x/ViennaRNA-2.4.18.tar.gz -O ViennaRNA-2.4.18.tar.gz && \
+    tar -xzf ViennaRNA-2.4.18.tar.gz && \
+    cd ViennaRNA-2.4.18 && \
+    mkdir build && \
+    ./configure --prefix=/opt/ViennaRNA-2.4.18/build && \
+    make -j$(nproc) && \
+    make install && \
+    rm /opt/ViennaRNA-2.4.18.tar.gz
+    cd /opt/deepMirCut
+
+    chmod +x /opt/bpRNA/bpRNA.pl
+
+    # Install local perl modules
+    mkdir -p /opt/perl5
+    curl -L https://cpanmin.us | perl - --local-lib=/opt/perl5 App::cpanminus
+    /opt/perl5/bin/cpanm install Graph
+
+    # Install Miniforge
+    arch=$(uname -m)
+    if [ "$arch" = "x86_64" ]; then
+        MINIFORGE_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh"
+    elif [ "$arch" = "aarch64" ]; then
+        MINIFORGE_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh"
+    else
+        echo "Unsupported architecture: $arch"
+        exit 1
+    fi
+    wget $MINIFORGE_URL -O miniforge.sh
+    bash miniforge.sh -b -p /opt/miniforge3
+    rm -f miniforge.sh
+
+    /opt/miniforge3/bin/conda init bash
+    /opt/miniforge3/bin/conda config --add channels bioconda
+    /opt/miniforge3/bin/conda config --add channels conda-forge
+    /opt/miniforge3/bin/conda update conda -y
+    /opt/miniforge3/bin/conda clean -afy
+
+    # Set up environment
+    cd /opt/deepMirCut
+    /opt/miniforge3/bin/mamba env create -f deepMirCut_env.yml -y
+
+    bash setup-deepMirCut.sh
+
+%runscript
+    # >>> conda initialize >>>
+    # !! Contents within this block are managed by 'conda init' !!
+    __conda_setup="$('/opt/miniforge3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+    if [ $? -eq 0 ]; then
+        eval "$__conda_setup"
+    else
+        if [ -f "/opt/miniforge3/etc/profile.d/conda.sh" ]; then
+            . "/opt/miniforge3/etc/profile.d/conda.sh"
+        else
+            export PATH="/opt/miniforge3/bin:$PATH"
+        fi
+    fi
+    unset __conda_setup
+    # <<< conda initialize <<<
+    conda activate dmc
+    exec bash

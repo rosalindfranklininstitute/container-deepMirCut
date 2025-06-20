@@ -17,8 +17,8 @@ docker: quay.io/rosalindfranklininstitute/deepmircut
 url: https://quay.io/rosalindfranklininstitute/deepmircut
 maintainer: JimBell
 latest:
-  v0.0.1: sha256:bc5a8af41864e22d2def54e302c080a75c884e866e5a22310d7a5c04b5b41b2f
+  v0.0.1: sha256:f5df7aa5a62da6331dc67b7af282035774238e27bb559c26bd0e1b22a43a31ac
 tags:
-  v0.0.1: sha256:bc5a8af41864e22d2def54e302c080a75c884e866e5a22310d7a5c04b5b41b2f
+  v0.0.1: sha256:f5df7aa5a62da6331dc67b7af282035774238e27bb559c26bd0e1b22a43a31ac
 features:
   gpu: true
